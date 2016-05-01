@@ -1,0 +1,79 @@
+@font-face {
+  font-family: 'VolteBold';
+  src: url('VolteBold.eot?#iefix') format('embedded-opentype'),  url('VolteBold.otf')  format('opentype'),
+       url('VolteBold.woff') format('woff'), url('VolteBold.ttf')  format('truetype'), url('VolteBold.svg#VolteBold') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'VolteMediumRegular';
+  src: url('VolteMediumRegular.eot?#iefix') format('embedded-opentype'),  url('VolteMediumRegular.otf')  format('opentype'),
+       url('VolteMediumRegular.woff') format('woff'), url('VolteMediumRegular.ttf')  format('truetype'), url('VolteMediumRegular.svg#VolteMediumRegular') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
+html,body{
+  padding: 0;
+  margin: 0;
+  background:white;
+  color:#111;
+  font-family: 'VolteMediumRegular', helvetica, "sans-serif";
+  overflow: hidden;
+}
+
+h1{
+  text-align:center;
+  font-family: 'VolteBold', helvetica, "sans-serif";
+  text-transform:uppercase;
+  font-size:6rem;
+  margin-bottom: 1rem;
+}
+
+h2{
+  margin-top: 0;
+  text-transform:uppercase;
+  text-align:center;
+  font-size:1.7rem;
+}
+
+#title{
+  position: absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  transition:color 3000ms linear;
+  z-index: 9;
+}
+
+.fade-to-white{
+  color:white;
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Chrome/Safari/Opera */
+  -khtml-user-select: none;    /* Konqueror */
+  -moz-user-select: none;      /* Firefox */
+  -ms-user-select: none;       /* Internet Explorer/Edge */
+  user-select: none;           /* Non-prefixed version, currently
+                                  not supported by any browser */
+}
+
+#white-canvas{
+  cursor: pointer;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.circle{
+  position: absolute;
+  border-radius:100%;
+  background:red;
+  height: 50px;
+  width:50px;
+}

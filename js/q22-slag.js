@@ -1,0 +1,432 @@
+/**
+ * Q22 - STATE Design Pattern
+ * ----------------------------
+ * Explore different states of an application demanding different reactions
+ * Checkout how complexity increases with increased conditions
+ * Extract the states to separate objects, enabling reduction of code complexity
+ */
+
+(function(win,doc,$){
+
+  function clone(src,out){
+    for(var attr in src.prototype){
+      out.prototype[attr] = src.prototype[attr];
+    }
+  }
+
+  //---
+  function Circle(){
+    // this is a builder behind the scenes
+    this.item = $('<div class="circle" style="background:black;"></div>');
+
+    // Waste of code if NOT CLICKED
+    var self = this;
+    this.opacity = 1;
+
+    this.fade = function (){
+      this.opacity *= 0.5;
+      this.item.fadeTo(0.5,this.opacity);
+    }
+    this.item.click(function(){
+      self.fade();
+    })
+  }
+  Circle.prototype.move = function( top, left){
+    this.item.css('top',top);
+    this.item.css('left',left);
+  }
+  Circle.prototype.scatter = function(){
+    this.move(Math.floor(Math.random()*win.innerHeight),Math.floor(Math.random()*win.innerWidth));
+  }
+  Circle.prototype.color = function(color){
+    this.item.css('background',color);
+  }
+  Circle.prototype.next = function(shp){
+    if(shp) {
+      this.nextShape = shp;
+    }
+    return this.nextShape;
+  }
+  Circle.prototype.chainDo = function(action, args, count){
+    this[action].apply(this,args);
+    if(count && this.nextShape){
+      setTimeout(binder(this,function(){
+        this.nextShape.chainDo(action, args, --count);
+      }),20)
+    }
+  }
+  //
+  Circle.prototype.get = function(){
+    this.item.css('background','ping');
+    return this.item;
+  }
+  Circle.prototype.getID = function(){
+    return this.id;
+  }
+  Circle.prototype.setID = function(id){
+    this.id = id;
+  }
+
+  function Rect(){
+    this.item = $('<div class="rect" style="width:30px;height:30px;position:absolute;"></div>');
+  }
+  clone(Circle,Rect);
+  // could add moveable, resizable etc...
+  function selfDestructDecorator(obj){
+    obj.item.click(function(){
+      obj.kill();
+    });
+    obj.kill = function(){
+      obj.item.remove();
+    }
+  }
+
+  function eventDispatcherDecorator(o){
+    var list = {};
+    o.addEvent = function(type, listener){
+      if(!list[type]){
+        list[type] = [];
+      }
+      if(list[type].indexOf(listener) === -1){
+        list[type].push(listener);
+      }
+    }
+    o.removeEvent = function(type, listener){
+      if(list[type]){
+        var i = list[type].indexOf(listener);
+        if(i > -1){
+          delete list[type][i]
+        }
+      }
+    }
+    o.dispatchEvent = function(e){
+      var aList = list[e.type];
+      if(aList){
+        if(!e.target){
+          e.target = this;
+        }
+        for(var i in aList){
+          aList[i](e);
+        }
+      }
+    }
+  }
+
+  var o = {};
+  var fn = function(){
+    console.log("it's over !!3");
+  }
+  eventDispatcherDecorator(o);
+  o.addEvent('over',function(){
+    console.log("it's over !!");
+  });;
+  o.addEvent('over',function(){
+    console.log("it's over again!!");
+  });
+  o.addEvent('over3',fn);
+  o.addEvent('over3',fn);
+  o.addEvent('over3',fn);
+  o.removeEvent('over3',fn);
+  o.dispatchEvent({type: "over"});
+  o.dispatchEvent({type: "over2"});
+  o.dispatchEvent({type: "over3"});
+
+  function binder(scope, fn){
+    return function(){
+      return fn.apply(scope,arguments);
+    }
+  }
+
+  function shapeFacade(shp){
+    return {
+      color: binder(shp,shp.color),
+      move: binder(shp,shp.move),
+      getID: binder(shp,shp.getID)
+    };
+  }
+
+
+  //---
+  function BlackCircleBuilder(){
+    this.item = new Circle();
+    this.init();
+  }
+  BlackCircleBuilder.prototype.init = function(){
+  }
+  BlackCircleBuilder.prototype.get = function(){
+    return this.item;
+  }
+
+  //---
+  function MultiCircleBuilder(){
+    this.item = new Circle();
+    this.init();
+  }
+  MultiCircleBuilder.prototype.init = function(){
+    var colors = ["#005AD6","#FF031D","#FB1D96","#F8D521","#FF5400","#00A34C"];
+    this.item.color(colors[Math.floor(Math.random() * colors.length)])
+  }
+  MultiCircleBuilder.prototype.get = function(){
+    return this.item;
+  }
+
+  //---
+  function GrowingCircleBuilder(){
+    this.item = new MultiCircleBuilder().get();
+    this.init();
+  }
+  GrowingCircleBuilder.prototype.init = function(){
+    var $circle =  this.item.get();
+    $circle.css({'height':2, 'width':2, 'transition': 'all 100ms linear', 'transition-origin':'center center'});
+    setTimeout(function(){
+      $circle.css('transform','scale(' + Math.random() * 50  + ')');
+    },100)
+  }
+  GrowingCircleBuilder.prototype.get = function(){
+    return this.item;
+  }
+
+  // Now AbstractCircleFactory
+  var ShapeFactory = function(){
+    // stores all the types
+    this.types = {};
+    // we want to manage all types of circles in 1 place - here
+    this.create = function(type){
+      return new this.types[type]().get();
+    }
+    this.register = function(type, cls){
+      if(cls.prototype.init && cls.prototype.get){
+        this.types[type] = cls;
+      }
+    }
+  }
+
+  function StageAdapter(id){
+    this.index = 0;
+    this.context = $(id);
+  }
+  StageAdapter.prototype.SIG = "stageItem_";
+  StageAdapter.prototype.add = function(item){
+    ++this.index;
+    item.addClass(this.SIG + this.index);
+    console.log('adding '+this.SIG + this.index)
+    this.context.append(item);
+  }
+  StageAdapter.prototype.remove = function(){
+    console.log('removing '+this.SIG + this.index)
+    $('.' + this.SIG + this.index).remove();
+    this.index--;
+  }
+
+
+  function CompositeController(a){
+    this.a = a; // array of all objects
+  }
+  CompositeController.prototype.action = function(act){
+    var args = Array.prototype.slice.call(arguments);
+        args.shift(); // remove first function name
+    for(var item in this.a){
+      this.a[item][act].apply(this.a[item], args);
+    }
+  }
+
+  function flyWeightFader(item){
+    if(item.hasClass('circle')){
+      console.log('item fade ??')
+      item.fadeTo(.5,item.css('opacity')*.5);
+    }
+  }
+
+  //---
+  var CircleGeneratorSingleton = (function(){
+    var instance;
+
+    function init(){
+      var _aCircle = [],
+          _canvas,
+          _sf = new ShapeFactory(),
+          _cc = new CompositeController(_aCircle);
+
+      function setStage(stage){
+        _canvas = stage;
+      }
+
+      function _position(circle, top, left){
+        circle.move(top,left);
+      }
+
+      function registerShape(name,cls){
+        _sf.register(name,cls);
+      }
+
+      function create(type, top,left){
+        var circle = _sf.create(type),
+            index = _aCircle.length-1;
+        circle.move(top,left);
+        circle.setID(_aCircle.length)
+        _aCircle.push(circle);
+
+        if(index !== -1){
+          _aCircle[index].next(circle);
+        }
+
+        return shapeFacade(circle);
+      }
+
+      function chainTint(count){
+        var index = Math.max(0,_aCircle.length-count),
+            color = "#"
+              + Math.floor(Math.random() * 255).toString(16)
+              + Math.floor(Math.random() * 255).toString(16)
+              + Math.floor(Math.random() * 255).toString(16);
+
+        _aCircle[index].chainDo('color',[color],count)
+      }
+
+      function tint(clr){
+        _cc.action('color',clr);
+      }
+      function scatter(){
+        _cc.action('scatter');
+      }
+      function gather(){
+        _cc.action('move',Math.floor(Math.random()*win.innerHeight),Math.floor(Math.random()*win.innerWidth));
+      }
+
+      function add(circle){
+        _canvas.add(_aCircle[circle.getID()].get());
+      }
+
+      function removeLast(){
+        _canvas.remove();
+      }
+
+      function index(){
+        return _aCircle.length;
+      }
+
+      return {
+        index:index,
+        create:create,
+        add:add,
+        register: registerShape,
+        setStage:setStage,
+        removeLast:removeLast,
+        gather:gather,
+        scatter:scatter,
+        tint:tint,
+        chainTint:chainTint
+      };
+    }
+
+    return{
+      getInstance:function(){
+        if(!instance){
+          instance = init();
+        }
+        return instance;
+      }
+    }
+  })();
+
+  var CircleModule = (function(win,doc){
+
+    function RedState(obj){
+      var on = 'red',
+          off = 'rgba(255,0,0,0.25)',
+          _nextState;
+
+        this.nextState = function (ns){
+          _nextState = ns;
+        };
+
+        this.start = function(){
+          console.log('RedState - start');
+          obj.color(on);
+          setTimeout(binder(_nextState,_nextState.start),1000);
+          setTimeout(function(){
+            obj.color(off);
+          },3000)
+        }
+    }
+
+    function YellowState(obj){
+      var on = 'yellow',
+          off = 'rgba(255,255,0,0.25)',
+          _nextState;
+
+        this.nextState = function (ns){
+          _nextState = ns;
+        };
+
+        this.start = function(){
+          console.log('YellowState - start');
+          obj.color(on);
+          setTimeout(function(){
+            obj.color(off);
+            _nextState.start();
+          },2000)
+        }
+    }
+
+    function GreenState(obj){
+      var on = 'green',
+          off = 'rgba(0,255,0,0.25)',
+          _nextState;
+
+        this.nextState = function (ns){
+          _nextState = ns;
+        };
+
+        this.start = function(){
+          console.log('GreenState - start');
+          obj.color(on);
+          setTimeout(function(){
+            obj.color(off);
+            _nextState.start();
+          },4000)
+        }
+    }
+
+    function init(){
+      var self = this;
+      var cg = CircleGeneratorSingleton.getInstance();
+      cg.register('circle',BlackCircleBuilder);
+
+      cg.setStage(new StageAdapter("#white-canvas"));
+
+      var red = cg.create('circle', 000,250);
+          red.color('rgba(255,0,0,.25)');
+          cg.add(red);
+
+      var yellow = cg.create('circle',70,250);
+          yellow.color('rgba(255,255,0,.25)');
+          cg.add(yellow);
+
+      var green = cg.create('circle',140,250);
+          green.color('rgba(0,255,0,.25)');
+          cg.add(green);
+
+      var rs = new RedState(red),
+          ys = new YellowState(yellow),
+          gs = new GreenState(green);
+
+          rs.nextState(ys);
+          ys.nextState(gs);
+          gs.nextState(rs);
+
+          rs.start();
+    };
+
+    return {
+      init: init
+    }
+  })(win,doc);
+
+
+  $(document).ready(function(e){
+    CircleModule.init();
+  });
+
+  if(!win.CircleModule){ win.CircleModule = CircleModule }
+})(window,document,jQuery);

@@ -73,7 +73,6 @@ h2{
 .circle{
   position: absolute;
   border-radius:100%;
-  background:red;
   height: 50px;
   width:50px;
 }

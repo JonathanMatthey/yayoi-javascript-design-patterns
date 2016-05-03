@@ -4,14 +4,12 @@
  * This js file is pretty messy, global variables, global functions, repeated code,
  * duplicate variable definitions, ambiguous local / global var access..
  *
- * I could go on...
- *
  * Clean it up !
  *
- * Build a Object Literal Pattern - It's simply a case of wrapping everything as 1 long JSON object.
- * call it CircleLib and put all the vars in there, functions, and make one .init function that is
- * called on Document Ready.
- *
+ * Build a Object Literal Pattern:
+ * Create a new object CircleLib
+ * Wrap everything into one big JSON object
+ * Have 1 init method, and call it in document ready
  *
  * Q1b: Namespace
  * --------------
